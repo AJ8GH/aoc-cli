@@ -1,0 +1,298 @@
+#!/usr/bin/env zsh
+
+help='''
+  Help
+  ==================================================================================================
+  -O <ide>         Open         open project with given ide
+  -D <new-day>     New day      override AOC_DAY environment variable
+  -Y <new-year>    New year     override AOC_YEAR environment variable
+  -L <new-level>   New level    override AOC_LEVEL environment variable
+  -I               Init         initialise a new project through cli input
+  -a <answer>      Answer       Submit parameter as answer. Accepts overrides D,Y,L
+  -o               Open         open project with default ide
+  -c               Create       create files and directories for current day. Accepts overrides D,Y,L
+  -r               README       Only create README file
+  -s               Set          set environment values with override values. Accepts overrides D,Y,L
+  -n               Next         advance to next level. Accepts flags d,y,l to advance to next year and/or day and/or level
+  -l               Level        combine with next to advance to next level, when advancing day and/or year
+  -d               Day          combine with next to advance to next day
+  -y               Year         combine with next to advance to next year
+  -e               Echo         echo current year, day and level to shell
+  -i               Install      install aoc cli executable
+  -u               Uninstall    uninstall aoc cli executable
+  -v               Verbose      print more detail
+  -h               Help         show help
+  -f               Files        create skeleton code files (use with create)
+'''
+
+level_select=0
+day_select=0
+year_select=0
+set=0
+create=0
+next=0
+submit=0
+echo=0
+uninstall=0
+verbose=0
+install=0
+open=0
+init=0
+env=0
+readme=0
+files=0
+force=0
+ide=''
+base_dir=''
+src_path=''
+res_path=''
+work_dir=''
+
+if [[ $# -eq 0 ]]; then
+  echo "${help}"
+  exit 0
+fi
+
+_source_env() {
+  work_dir="/usr/local/bin/aoc-scripts"
+  env_dir="${work_dir}/envs"
+  source "${env_dir}/current.env"
+  source "${env_dir}/${AOC_ENV_FILE}"
+}
+
+_source_env
+
+while getopts a:D:Y:L:O:E:IFxdysncleuihovrf flag; do
+  case $flag in
+  D) day=${OPTARG} ;;
+  Y) year=${OPTARG} ;;
+  L) level=${OPTARG} ;;
+  l) level_select=1 ;;
+  d) day_select=1 ;;
+  y) year_select=1 ;;
+  c) create=1 ;;
+  n) next=1 ;;
+  s) set=1 ;;
+  e) echo=1 ;;
+  i) install=1 ;;
+  u) uninstall=1 ;;
+  f) files=1 ;;
+  F) force=1 ;;
+  h) echo "${help}" ;;
+  x) example=1 ;;
+  o) open=1 ;;
+  v) verbose=1 ;;
+  r) readme=1 ;;
+  I) init=1 ;;
+  E)
+    new_env=${OPTARG}
+    env=1
+    ;;
+  O)
+    ide=${OPTARG}
+    open=1
+    ;;
+  a)
+    answer=${OPTARG}
+    submit=1
+    ;;
+  *) echo "${help}" ;;
+  esac
+done
+
+_print_env() {
+  _source_env
+  if [[ ${verbose} == 0 ]]; then
+    echo "You are currently on year 20${AOC_YEAR} day ${AOC_DAY} level ${AOC_LEVEL}"
+  else
+    cat "${env_dir}/${AOC_ENV_FILE}"
+  fi
+}
+
+_switch_env() {
+  echo "export AOC_ENV_FILE=${new_env}.env" >"${env_dir}/current.env"
+  _source_env
+}
+
+_build_dirs() {
+  if [[ -z ${AOC_MODULE_PREFIX} ]]; then
+    module_dir=''
+  else
+    module_dir="${AOC_MODULE_PREFIX}${AOC_YEAR}/"
+  fi
+
+  if [[ -z ${AOC_SRC_YEAR_PREFIX} ]]; then
+    src_year_dir=''
+  else
+    src_year_dir="${AOC_SRC_YEAR_PREFIX}${AOC_YEAR}/"
+  fi
+
+  if [[ -z ${AOC_RES_YEAR_PREFIX} ]]; then
+    res_year_dir=''
+  else
+    res_year_dir="${AOC_RES_YEAR_PREFIX}${AOC_YEAR}/"
+  fi
+
+  if [[ -z ${AOC_SRC_SUBDIR} ]]; then
+    src_subdir=''
+  else
+    src_subdir="${AOC_SRC_SUBDIR}/"
+  fi
+
+  if [[ -z ${AOC_RES_SUBDIR} ]]; then
+    res_subdir=''
+  else
+    res_subdir="${AOC_RES_SUBDIR}/"
+  fi
+
+  base_dir="${AOC_PROJECT_DIR}${module_dir}"
+  day_dir="${AOC_DAY_PREFIX}${day}/"
+  src_dir="${AOC_SRC_DIR}${src_year_dir}${day_dir}${src_subdir}"
+  test_dir="${AOC_TEST_DIR}${src_year_dir}${day_dir}${src_subdir}"
+  res_dir="${AOC_RES_DIR}${res_year_dir}${day_dir}${res_subdir}"
+  src_path="${base_dir}${src_dir}"
+  test_path="${base_dir}${test_dir}"
+  res_path="${base_dir}${res_dir}"
+}
+
+_resolve_vars() {
+  if [[ -z ${level} ]]; then
+    level=${AOC_LEVEL}
+  fi
+
+  if [[ -z ${day} ]]; then
+    day=${AOC_DAY}
+  fi
+
+  if [[ -z ${year} ]]; then
+    year=${AOC_YEAR}
+  fi
+}
+
+_uninstall() {
+  sh "${work_dir}/uninstall.sh"
+  if [[ $? == 0 ]]; then
+    echo "AoC successfully uninstalled"
+  else
+    echo "Problem uninstalling AoC"
+  fi
+}
+
+_install() {
+  sh "${work_dir}/install.sh"
+  if [[ $? == 0 ]]; then
+    echo "AoC successfully installed"
+  else
+    echo "Problem installing AoC"
+  fi
+}
+
+_next() {
+  if [[ (${level_select} == 0 && ${year_select} == 0) ]]; then
+    day_select=1
+    level='1'
+    _set
+  fi
+  python "${work_dir}/env.py" 1 'next' "${level_select}" "${day_select}" "${year_select}" "${work_dir}" "${env_dir}/${AOC_ENV_FILE}"
+  mv "${env_dir}/.env_temp" "${env_dir}/${AOC_ENV_FILE}"
+}
+
+_set() {
+  _resolve_vars
+  python "${work_dir}/env.py" 1 'set' "${level}" "${day}" "${year}" "${work_dir}" "${env_dir}/${AOC_ENV_FILE}"
+  mv "${env_dir}/.env_temp" "${env_dir}/${AOC_ENV_FILE}"
+}
+
+_create() {
+  files=$1
+  force=$2
+  readme=$3
+  example=$4
+
+  _source_env
+  _resolve_vars
+  _build_dirs
+  sh "${work_dir}/create.sh" "${year}" "${day}" "${src_path}" "${res_path}" "${test_path}" "${files}" "${force}" "${readme}" "${example}" "${level}"
+}
+
+_submit() {
+  _resolve_vars
+  echo "Submitting answer ${answer} for ${year} day ${day} level ${level} ..."
+  response=$(sh "${work_dir}/submit.sh" "${answer}" "${level}" "${year}" "${day}")
+  _parse_result "${response}"
+}
+
+_parse_result() {
+  _create 0 0 1 0 >/dev/null
+  result=$(python "${work_dir}/env.py" "${response}" "submit" 1 0 0 "${work_dir}" "${env_dir}/${AOC_ENV_FILE}")
+  echo "\n${result}\n"
+  if [[ "${result}" == "Congratulations, that's the correct answer!" ]]; then
+    mv "${env_dir}/.env_temp" "${env_dir}/${AOC_ENV_FILE}"
+    _source_env
+    year=$AOC_YEAR
+    day=$AOC_DAY
+    level=$AOC_LEVEL
+    _create 1 0 1 1
+    echo "\nNext submission will be for 20${AOC_YEAR} day ${AOC_DAY} level ${AOC_LEVEL}"
+  fi
+}
+
+_open() {
+  if [[ -z ${ide} ]]; then
+    ide=${AOC_IDE}
+  fi
+  echo "Opening AoC ..."
+  ${ide} "${AOC_PROJECT_DIR}"
+}
+
+_init() {
+  _source_env
+  python "${work_dir}/init.py"
+  _source_env
+  source "${env_dir}/${AOC_ENV_FILE}"
+
+  _build_dirs
+  mkdir -p "${base_dir}"
+}
+
+if [[ ${uninstall} == 1 ]]; then
+  _uninstall
+fi
+
+if [[ ${install} == 1 ]]; then
+  _install
+fi
+
+if [[ ${next} == 1 ]]; then
+  _next
+  _print_env
+fi
+
+if [[ ${set} == 1 ]]; then
+  _set
+  _print_env
+fi
+
+if [[ ${create} == 1 ]]; then
+  _create "$files" "$force" "$readme" "$example"
+fi
+
+if [[ ${submit} == 1 ]]; then
+  _submit
+fi
+
+if [[ ${echo} == 1 && ${set} != 1 && ${next} != 1 ]]; then
+  _print_env
+fi
+
+if [[ ${open} == 1 ]]; then
+  _open
+fi
+
+if [[ ${init} == 1 ]]; then
+  _init
+fi
+
+if [[ ${env} == 1 ]]; then
+  _switch_env
+fi
