@@ -10,7 +10,7 @@ file = sys.argv[1]
 
 f_in = open(file, "rt")
 for line in f_in:
-    if 'For example' in line:
+    if 'For example' in line or 'Here is an example' in line:
         get_example = True
     if get_example:
         if example.search(line):

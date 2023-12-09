@@ -42,6 +42,7 @@ env=0
 readme=0
 files=0
 force=0
+example=0
 ide=''
 base_dir=''
 src_path=''
@@ -208,6 +209,12 @@ _create() {
   force=$2
   readme=$3
   example=$4
+
+  if [[ (${files} == 0 && ${readme} == 0 && ${example} == 0) ]]; then
+    files=1
+    readme=1
+    example=1
+  fi
 
   _source_env
   _resolve_vars
