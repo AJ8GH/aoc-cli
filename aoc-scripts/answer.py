@@ -12,7 +12,7 @@ readme_file = sys.argv[1]
 test_file = sys.argv[2]
 level = int(sys.argv[3])
 PART_2_HEADER = '--- Part Two ---'
-LINE = '    return getInput(0, 0);\n'
+LINE = 'getInput(0, 0)'
 PART_1 = 'inputProviderPart1'
 PART_2 = 'inputProviderPart2'
 
@@ -49,9 +49,9 @@ for line in f_in:
         f_out.write(line)
     else:
         if writing_1 and level_1_found:
-            f_out.write(line.replace(LINE, f'    return getInput({answer1}, 0);\n'))
+            f_out.write(line.replace(LINE, f'getInput({answer1}, 0)'))
         elif writing_2 and level_2_found:
-            f_out.write(line.replace(LINE, f'    return getInput({answer2}, 0);\n'))
+            f_out.write(line.replace(LINE, f'getInput({answer2}, 0)'))
         else:
             f_out.write(LINE)
         written = True

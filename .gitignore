@@ -1,4 +1,4 @@
 aoc-scripts/envs/*.env
 !aoc-scripts/envs/current.env
-!aoc-scripts/envs/template.env
+!aoc-scripts/envs/*template.env
 node_modules

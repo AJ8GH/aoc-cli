@@ -11,6 +11,7 @@ force=${7}
 readme=${8}
 example_answer=${9}
 level=${10}
+language=${11}
 
 session="${AOC_SESSION}"
 aoc_url="${AOC_URL}"
@@ -48,7 +49,7 @@ _get_input() {
 }
 
 _create_files() {
-  src_file="${src_path}Day${day}.java"
+  src_file="${src_path}Day${day}.${language}"
   src_template="$AOC_SRC_CODE_GEN_FILE"
   if [[ ! -f "${src_file}" ]]; then
     cat "$src_template" > "${src_file}"
@@ -57,7 +58,7 @@ _create_files() {
     rm "${src_file}.bak"
   fi
 
-  test_file="${test_path}Day${day}Test.java"
+  test_file="${test_path}Day${day}Test.${language}"
   test_template="$AOC_TEST_CODE_GEN_FILE"
   if [[ ! -f "${test_file}" ]]; then
     cat "$test_template" > "${test_file}"
@@ -78,6 +79,6 @@ if [[ ${create_skeleton_code} == 1 ]]; then
 fi
 
 if [[ ${example_answer} == 1 ]]; then
-  python "${work_dir}/answer.py" "${res_path}README.md" "${test_path}Day${day}Test.java" "${level}"
-  mv "${test_path}Day${day}Test.java1" "${test_path}Day${day}Test.java"
+  python "${work_dir}/answer.py" "${res_path}README.md" "${test_path}Day${day}Test.${language}" "${level}"
+  mv "${test_path}Day${day}Test.${language}1" "${test_path}Day${day}Test.${language}"
 fi

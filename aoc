@@ -8,6 +8,7 @@ help='''
   -Y <new-year>    New year     override AOC_YEAR environment variable
   -L <new-level>   New level    override AOC_LEVEL environment variable
   -I               Init         initialise a new project through cli input
+  -E <file-name>   Env file     Switch to different env file
   -a <answer>      Answer       Submit parameter as answer. Accepts overrides D,Y,L
   -o               Open         open project with default ide
   -c               Create       create files and directories for current day. Accepts overrides D,Y,L
@@ -17,12 +18,13 @@ help='''
   -l               Level        combine with next to advance to next level, when advancing day and/or year
   -d               Day          combine with next to advance to next day
   -y               Year         combine with next to advance to next year
-  -e               Echo         echo current year, day and level to shell
+  -e               Echo         echo current year, day and level to shell. Combine with -v to print env file
   -i               Install      install aoc cli executable
   -u               Uninstall    uninstall aoc cli executable
   -v               Verbose      print more detail
   -h               Help         show help
   -f               Files        create skeleton code files (use with create)
+  -k               Show envs    show all env files
 '''
 
 level_select=0
@@ -43,6 +45,7 @@ readme=0
 files=0
 force=0
 example=0
+envs=0
 ide=''
 base_dir=''
 src_path=''
@@ -63,7 +66,7 @@ _source_env() {
 
 _source_env
 
-while getopts a:D:Y:L:O:E:IFxdysncleuihovrf flag; do
+while getopts a:D:Y:L:O:E:IFxdysncleuihovrfk flag; do
   case $flag in
   D) day=${OPTARG} ;;
   Y) year=${OPTARG} ;;
@@ -84,6 +87,7 @@ while getopts a:D:Y:L:O:E:IFxdysncleuihovrf flag; do
   o) open=1 ;;
   v) verbose=1 ;;
   r) readme=1 ;;
+  k) envs=1 ;;
   I) init=1 ;;
   E)
     new_env=${OPTARG}
@@ -219,7 +223,7 @@ _create() {
   _source_env
   _resolve_vars
   _build_dirs
-  sh "${work_dir}/create.sh" "${year}" "${day}" "${src_path}" "${res_path}" "${test_path}" "${files}" "${force}" "${readme}" "${example}" "${level}"
+  sh "${work_dir}/create.sh" "${year}" "${day}" "${src_path}" "${res_path}" "${test_path}" "${files}" "${force}" "${readme}" "${example}" "${level}" "${AOC_LANGUAGE}"
 }
 
 _submit() {
@@ -262,6 +266,10 @@ _init() {
   mkdir -p "${base_dir}"
 }
 
+_show_envs() {
+  ls "${work_dir}/envs"
+}
+
 if [[ ${uninstall} == 1 ]]; then
   _uninstall
 fi
@@ -302,4 +310,8 @@ fi
 
 if [[ ${env} == 1 ]]; then
   _switch_env
+fi
+
+if [[ $envs == 1 ]]; then
+  _show_envs
 fi
